@@ -1,1 +1,59 @@
+name: Build DisableSogouNetwork
 
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set version from commit
+      run: |
+        SHORT_HASH=$(git rev-parse --short HEAD)
+        echo "VERSION=1.0.0+$SHORT_HASH" >> $GITHUB_ENV
+
+    - name: Create version.rc
+      run: |
+        echo "#include <windows.h>" > version.rc
+        echo "VS_VERSION_INFO VERSIONINFO" >> version.rc
+        echo "FILEVERSION 1,0,0,0" >> version.rc
+        echo "PRODUCTVERSION 1,0,0,0" >> version.rc
+        echo "FILEFLAGSMASK 0x3fL" >> version.rc
+        echo "FILEFLAGS 0x0L" >> version.rc
+        echo "FILEOS VOS_NT_WINDOWS32" >> version.rc
+        echo "FILETYPE VFT_APP" >> version.rc
+        echo "{" >> version.rc
+        echo " BLOCK \"StringFileInfo\"" >> version.rc
+        echo " {" >> version.rc
+        echo "  BLOCK \"040904b0\"" >> version.rc
+        echo "  {" >> version.rc
+        echo "   VALUE \"FileVersion\", \"${VERSION}\"" >> version.rc
+        echo "   VALUE \"ProductVersion\", \"${VERSION}\"" >> version.rc
+        echo "  }" >> version.rc
+        echo " }" >> version.rc
+        echo " BLOCK \"VarFileInfo\"" >> version.rc
+        echo " {" >> version.rc
+        echo "  VALUE \"Translation\", 0x0409, 1200" >> version.rc
+        echo " }" >> version.rc
+        echo "}" >> version.rc
+
+    - name: Build exe
+      run: |
+        cl /EHsc DisableSogouNetwork.cpp version.rc /Fe:DisableSogouNetwork.exe
+
+    - name: Create ZIP
+      run: |
+        powershell Compress-Archive -Path DisableSogouNetwork.exe -DestinationPath DisableSogouNetwork.zip
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: DisableSogouNetwork
+        path: DisableSogouNetwork.zip
