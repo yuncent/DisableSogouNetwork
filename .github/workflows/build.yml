@@ -1,11 +1,21 @@
-name: Build and Release DisableSogouNetwork
+name: DisableSogouNetwork Build & Release
+
+# ---------- 按需修改以下四个变量 ----------
+env:
+  SRC_FILE: DisableSogouNetwork.cpp
+  EXE_NAME: DisableSogouNetwork
+  LINK_LIBS: ole32.lib oleaut32.lib uuid.lib advapi32.lib shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib
+  RELEASE_BODY: |
+    搜狗输入法联网管理工具
+# -------------------------------------------
+
+permissions:
+  contents: write
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [main, master]
+    tags: ['v*']
   workflow_dispatch:
 
 jobs:
@@ -15,53 +25,52 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: 设置版本号
-      shell: bash
-      run: |
-        if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-        else
-          echo "VERSION=1.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-        fi
+      - name: 设置版本号
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=1.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
 
-    - name: 编译
-      shell: cmd
-      run: |
-        for /f "usebackq delims=" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VS_PATH=%%i
-        call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
-        cl.exe /EHsc /std:c++17 /O2 /GL /MT ^
-          /DVERSION="%VERSION%" ^
-          /Fe:"DisableSogouNetwork_%VERSION%.exe" ^
-          DisableSogouNetwork.cpp ^
-          /link ^
-            ole32.lib oleaut32.lib uuid.lib advapi32.lib ^
-            shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib ^
-            /SUBSYSTEM:WINDOWS
+      - name: 编译
+        shell: cmd
+        run: |
+          for /f "usebackq delims=" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VS_PATH=%%i
+          call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          cl.exe /EHsc /std:c++17 /O2 /GL /MT ^
+            /DVERSION="%VERSION%" ^
+            /Fe:"${{ env.EXE_NAME }}_%VERSION%.exe" ^
+            ${{ env.SRC_FILE }} ^
+            /link ${{ env.LINK_LIBS }} /SUBSYSTEM:WINDOWS
 
-    - name: 打包
-      shell: powershell
-      run: Compress-Archive -Path "DisableSogouNetwork_$env:VERSION.exe" -DestinationPath "DisableSogouNetwork_$env:VERSION.zip"
+      - name: 打包
+        shell: cmd
+        run: powershell Compress-Archive -Path "${{ env.EXE_NAME }}_%VERSION%.exe" -DestinationPath "${{ env.EXE_NAME }}_%VERSION%.zip"
 
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: DisableSogouNetwork-${{ env.VERSION }}
-        path: "*.zip"
+      - name: 上传 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXE_NAME }}-${{ env.VERSION }}
+          path: |
+            ${{ env.EXE_NAME }}_${{ env.VERSION }}.exe
+            ${{ env.EXE_NAME }}_${{ env.VERSION }}.zip
 
-    - name: 自动创建 Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: "*.zip"
-        tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
-        name: DisableSogouNetwork Release ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
-        body: |
-          搜狗输入法联网管理工具
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.EXE_NAME }}_${{ env.VERSION }}.exe
+            ${{ env.EXE_NAME }}_${{ env.VERSION }}.zip
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
+          name: ${{ env.EXE_NAME }} Release ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
