@@ -1,4 +1,4 @@
-name: Build DisableSogouNetwork (Latest)
+name: Build DisableSogouNetwork (All Latest)
 
 on:
   push:
@@ -9,8 +9,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 强制 JS Actions 用 Node 24
 
     steps:
     - name: Checkout repo
@@ -21,7 +19,7 @@ jobs:
         echo "VERSION=1.0.0+$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
 
     - name: Cache MSYS2
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: C:/msys64
         key: msys2-windows-${{ runner.os }}-${{ hashFiles('**/*.cpp') }}
@@ -42,13 +40,13 @@ jobs:
       run: |
         export PATH=/c/msys64/mingw64/bin:$PATH
         x86_64-w64-mingw32-g++ DisableSogouNetwork.cpp -O2 -std=c++17 \
-          -o DisableSogouNetwork.exe -DVERSION=\"${VERSION}\" \
+          -o DisableSogouNetwork_${VERSION}.exe -DVERSION=\"${VERSION}\" \
           -lole32 -loleaut32 -luuid -ladvapi32
 
     - name: Create ZIP
       shell: powershell
       run: |
-        Compress-Archive -Path DisableSogouNetwork.exe -DestinationPath DisableSogouNetwork_${VERSION}.zip
+        Compress-Archive -Path DisableSogouNetwork_${VERSION}.exe -DestinationPath DisableSogouNetwork_${VERSION}.zip
 
     - name: Upload artifact
       uses: actions/upload-artifact@v5
