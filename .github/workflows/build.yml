@@ -12,60 +12,52 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'   # 消除 Node.js 20 弃用警告
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
-        fetch-depth: 0   # 获取完整历史，用于生成 release notes
+        fetch-depth: 0
 
     - name: 设置版本号
       shell: bash
       run: |
-        if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          # 如果是推送 tag 触发的，直接使用 tag 名称（如 v1.0.0）
-          echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+        if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
         else
-          # 如果是 main 分支推送或手动触发，使用“1.0.0-短哈希”作为版本号
-          SHORT_HASH=$(git rev-parse --short HEAD)
-          echo "VERSION=1.0.0-${SHORT_HASH}" >> $GITHUB_ENV
+          echo "VERSION=1.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         fi
 
-    - name: 用 Visual C++ 编译
+    - name: 编译
       shell: cmd
       run: |
-        :: 自动定位最新安装的 Visual Studio
         for /f "usebackq delims=" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VS_PATH=%%i
         call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
 
-        :: 编译并静态链接所有依赖库，生成独立的 exe 文件
         cl.exe /EHsc /std:c++17 /O2 /GL /MT ^
           /DVERSION="%VERSION%" ^
           /Fe:"DisableSogouNetwork_%VERSION%.exe" ^
           DisableSogouNetwork.cpp ^
-          /link ^
-            ole32.lib oleaut32.lib uuid.lib advapi32.lib ^
-            shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib ^
-            /SUBSYSTEM:WINDOWS
+          /link ole32.lib oleaut32.lib uuid.lib advapi32.lib shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib ^
+          /SUBSYSTEM:WINDOWS
 
-    - name: 打包为 ZIP
+    - name: 打包
       shell: powershell
       run: |
-        $zipName = "DisableSogouNetwork_$env:VERSION.zip"
-        Compress-Archive -Path "DisableSogouNetwork_$env:VERSION.exe" -DestinationPath $zipName
+        Compress-Archive -Path "DisableSogouNetwork_${env:VERSION}.exe" `
+        -DestinationPath "DisableSogouNetwork_${env:VERSION}.zip"
 
-    - name: 上传构建产物（可在 Actions 页面下载）
+    - name: 上传构建产物
       uses: actions/upload-artifact@v4
       with:
         name: DisableSogouNetwork-${{ env.VERSION }}
         path: "*.zip"
 
-    - name: 自动发布 Release（仅当推送 tag 时）
+    - name: 自动发布（仅 tag）
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: "*.zip"
-        name: ${{ env.VERSION }}
         tag_name: ${{ github.ref_name }}
-        generate_release_notes: true   # 自动生成 release notes，不再空白
+        name: ${{ github.ref_name }}
+        generate_release_notes: true
