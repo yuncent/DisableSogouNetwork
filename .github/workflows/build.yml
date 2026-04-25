@@ -1,9 +1,8 @@
-name: DisableSogouNetwork
+name: DisableSogouNetwork Build & Release
 
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:         
 
 jobs:
   build:
