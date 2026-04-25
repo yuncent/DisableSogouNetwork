@@ -16,6 +16,7 @@
 
 ### ✅ 测试结果
 > **<span style="color:red">程序已在公司多台电脑上测试通过，搜狗输入法所有相关进程的网络访问已被完全阻断。确认功能正常。</span>**
-> 
+
+## 软件如图
 
 <img width="645" height="561" alt="ScreenShot_2026-04-25_145959_319" src="https://github.com/user-attachments/assets/e2800a3f-7c80-4299-b617-30406fb14922" />
