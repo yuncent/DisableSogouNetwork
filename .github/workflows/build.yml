@@ -1,73 +1,38 @@
-name: DisableSogouNetwork Build & Release
-
-env:
-  SRC_FILE: DisableSogouNetwork.cpp
-  EXE_NAME: DisableSogouNetwork
-  LINK_LIBS: ole32.lib oleaut32.lib uuid.lib advapi32.lib shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib
-  RELEASE_BODY: |
-    搜狗输入法联网管理工具
-
-permissions:
-  contents: write
+name: DisableSogouNetwork
 
 on:
   push:
-    branches: [main, master]
     tags: ['v*']
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: 设置版本号
-        shell: bash
-        run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-          else
-            echo "VERSION=snapshot-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
 
       - name: 编译
         shell: cmd
         run: |
           for /f "usebackq delims=" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VS_PATH=%%i
-          call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64
           cl.exe /EHsc /std:c++17 /O2 /GL /MT ^
-            /DVERSION="%VERSION%" ^
-            /Fe:"${{ env.EXE_NAME }}_%VERSION%.exe" ^
-            ${{ env.SRC_FILE }} ^
-            /link ${{ env.LINK_LIBS }} /SUBSYSTEM:WINDOWS /MANIFEST:EMBED
+            /Fe:"DisableSogouNetwork_%GITHUB_REF_NAME%.exe" ^
+            DisableSogouNetwork.cpp ^
+            /link ole32.lib oleaut32.lib uuid.lib advapi32.lib shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib ^
+            /SUBSYSTEM:WINDOWS /MANIFEST:EMBED
 
       - name: 打包
         shell: cmd
-        run: powershell Compress-Archive -Path "${{ env.EXE_NAME }}_%VERSION%.exe" -DestinationPath "${{ env.EXE_NAME }}_%VERSION%.zip"
-
-      - name: 上传 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.EXE_NAME }}-${{ env.VERSION }}
-          path: |
-            ${{ env.EXE_NAME }}_${{ env.VERSION }}.exe
-            ${{ env.EXE_NAME }}_${{ env.VERSION }}.zip
+        run: powershell Compress-Archive -Path "DisableSogouNetwork_%GITHUB_REF_NAME%.exe" -DestinationPath "DisableSogouNetwork_%GITHUB_REF_NAME%.zip"
 
       - name: 创建 Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ env.EXE_NAME }}_${{ env.VERSION }}.exe
-            ${{ env.EXE_NAME }}_${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
-          name: ${{ env.EXE_NAME }} Release ${{ env.VERSION }}
-          body: ${{ env.RELEASE_BODY }}
-          draft: false
-          prerelease: false
+            DisableSogouNetwork_${{ github.ref_name }}.exe
+            DisableSogouNetwork_${{ github.ref_name }}.zip
+          tag_name: ${{ github.ref_name }}
+          body: |
+            搜狗输入法联网管理工具
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
