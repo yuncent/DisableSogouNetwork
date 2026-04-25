@@ -1,4 +1,4 @@
-name: Build DisableSogouNetwork 
+name: Build DisableSogouNetwork
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
         g++ DisableSogouNetwork.cpp \
           -O2 -std=c++17 \
           -DVERSION=\"$VERSION\" \
+          -DNET_FW_IP_PROTOCOL_ANY=256 \
           -static \
           -o "DisableSogouNetwork_$VERSION.exe" \
           -lole32 -loleaut32 -luuid -ladvapi32 -lshell32 -lcomctl32
