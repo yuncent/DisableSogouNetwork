@@ -1,4 +1,4 @@
-name: Build DisableSogouNetwork (GCC)
+name: Build DisableSogouNetwork (Windows MinGW)
 
 on:
   push:
@@ -8,29 +8,36 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Install MinGW-w64
-      run: |
-        sudo apt update
-        sudo apt install -y mingw-w64 zip
+    - name: Checkout code
+      uses: actions/checkout@v3
 
     - name: Set version from commit
       run: |
-        SHORT_HASH=$(git rev-parse --short HEAD)
-        echo "VERSION=1.0.0+$SHORT_HASH" >> $GITHUB_ENV
+        echo "VERSION=1.0.0+$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
 
-    - name: Build exe (GCC)
+    - name: Install MSYS2 / MinGW
+      shell: powershell
       run: |
+        choco install msys2 --yes
+        refreshenv
+        pacman -Syu --noconfirm
+        pacman -S --needed mingw-w64-x86_64-toolchain zip --noconfirm
+
+    - name: Build exe with MinGW
+      shell: bash
+      run: |
+        export PATH=/c/msys64/mingw64/bin:$PATH
         x86_64-w64-mingw32-g++ DisableSogouNetwork.cpp -O2 -std=c++17 \
-        -o DisableSogouNetwork.exe -DVERSION=\"${VERSION}\"
+          -o DisableSogouNetwork.exe -DVERSION=\"${VERSION}\" \
+          -lole32 -loleaut32 -luuid -ladvapi32
 
     - name: Create ZIP
+      shell: powershell
       run: |
-        zip DisableSogouNetwork.zip DisableSogouNetwork.exe
+        Compress-Archive -Path DisableSogouNetwork.exe -DestinationPath DisableSogouNetwork.zip
 
     - name: Upload artifact
       uses: actions/upload-artifact@v5
