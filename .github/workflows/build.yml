@@ -33,7 +33,7 @@ jobs:
         zip DisableSogouNetwork.zip DisableSogouNetwork.exe
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v5
       with:
         name: DisableSogouNetwork
         path: DisableSogouNetwork.zip
