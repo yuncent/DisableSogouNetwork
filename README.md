@@ -50,6 +50,12 @@ This tool blocks all network access of Sogou Input Method using Windows Firewall
 
 ---
 
+## 📸 Screenshot
+
+<img width="645" height="561" alt="screenshot" src="https://github.com/user-attachments/assets/e2800a3f-7c80-4299-b617-30406fb14922" />
+
+---
+
 ## 🔎 Keywords
 
 ### English
@@ -65,12 +71,6 @@ input method network restriction
 搜狗输入法 防火墙限制联网  
 输入法 网络拦截 工具  
 Windows 输入法 隐私保护  
-
----
-
-## 📸 Screenshot
-
-<img width="645" height="561" alt="screenshot" src="https://github.com/user-attachments/assets/e2800a3f-7c80-4299-b617-30406fb14922" />
 
 ---
 
