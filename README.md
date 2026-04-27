@@ -1,22 +1,33 @@
-# DisableSogouNetwork / 搜狗输入法联网(禁网)管理工具
+# Disable Sogou Input Method Network Tool（搜狗输入法禁网工具）
 
-## 功能
-- 扫描所有搜狗输入法程序（安装目录 + 运行进程）
-- 查看每个程序的防火墙状态（正常/已禁用）
-- 一键禁用选中程序的网络访问（出站+入站）
-- 一键恢复网络访问，也可清除全部规则
-- 支持自定义扫描文件夹
-- 显示残留防火墙规则（程序已删除但规则还在）
+A Windows tool to **block Sogou Input Method from accessing the internet**.
+
+This tool helps users improve privacy by disabling network access for all Sogou processes using Windows Firewall rules.
+
+## Features / 功能
+- Scan all Sogou Input Method programs (installed files + running processes)
+- View firewall status (enabled / blocked)
+- One-click block network access (inbound + outbound)
+- One-click restore network access or remove all rules
+- Support custom folder scanning
+- Detect leftover firewall rules
+
+## Use Case / 使用场景
+- Disable Sogou Input Method network activity  
+- Block Sogou telemetry and data upload  
+- Improve privacy and security on Windows  
+
+## Keywords
+sogou input method  
+disable sogou network  
+block sogou firewall  
+sogou privacy tool  
+windows firewall tool  
 
 ## 使用
 1. 以管理员身份运行
 2. 点击“扫描进程”
 3. 勾选程序后点“禁用网络”或“恢复网络”
-4. 点击标题栏问号查看版本信息
 
-## ✅ 测试结果
-程序已在公司多台电脑上测试通过，搜狗输入法所有相关进程的网络访问已被完全阻断。确认功能正常。
-
-## 软件如图
-
-<img width="645" height="561" alt="ScreenShot_2026-04-25_145959_319" src="https://github.com/user-attachments/assets/e2800a3f-7c80-4299-b617-30406fb14922" />
+## Screenshot
+<img width="645" height="561" src="https://github.com/user-attachments/assets/e2800a3f-7c80-4299-b617-30406fb14922" />
