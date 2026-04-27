@@ -1,4 +1,4 @@
-# DisableSogouNetwork / 搜狗输入法联网(禁网)管理工具
+# DisableSogouNetwork / 搜狗输入法禁止联网管理工具
 
 ## 功能
 - 扫描所有搜狗输入法程序（安装目录 + 运行进程）
