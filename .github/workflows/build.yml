@@ -1,54 +1,73 @@
-name: DisableSogouNetwork Build & Release
+name: 发布 Release
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      version:
-        description: '版本号'
-        required: true
-        default: 'v1.0.0'
 
 jobs:
-  build:
+  release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v1.1
 
-      - name: 确定版本号
-        shell: bash
+      - name: 生成版本资源并编译
+        shell: pwsh
         run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-          else
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          fi
+          $ver = $env:GITHUB_REF_NAME -replace '^v', ''
+          $commaVer = ($ver -replace '\.', ',') + ',0'
+          @"
+          #include <winresrc.h>
+          VS_VERSION_INFO VERSIONINFO
+          FILEVERSION     $commaVer
+          PRODUCTVERSION  $commaVer
+          FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+          FILEFLAGS       0
+          FILEOS          VOS_NT_WINDOWS32
+          FILETYPE        VFT_APP
+          BEGIN
+              BLOCK "StringFileInfo"
+              BEGIN
+                  BLOCK "040904E4"
+                  BEGIN
+                      VALUE "FileVersion", "$ver"
+                      VALUE "ProductVersion", "$ver"
+                      VALUE "ProductName", "FRP 管理器"
+                  END
+              END
+              BLOCK "VarFileInfo"
+              BEGIN
+                  VALUE "Translation", 0x0409, 0x04E4
+              END
+          END
+          "@ | Out-File -FilePath version.rc -Encoding unicode
 
-      - name: 编译
-        shell: cmd
+          msbuild FrpManager.sln /p:Configuration=Release /p:Platform=x86
+
+      - name: 查找 EXE 输出位置
+        if: always()
+        shell: pwsh
+        run: Get-ChildItem -Recurse -Filter FRPManager.exe | Select-Object FullName
+
+      - name: 打包 ZIP
+        shell: pwsh
         run: |
-          for /f "usebackq delims=" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VS_PATH=%%i
-          call "%VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=amd64
-          cl.exe /EHsc /std:c++17 /O2 /GL /MT ^
-            /DVERSION="%VERSION%" ^
-            /Fe:"DisableSogouNetwork_%VERSION%.exe" ^
-            DisableSogouNetwork.cpp ^
-            /link ole32.lib oleaut32.lib uuid.lib advapi32.lib shell32.lib comctl32.lib gdi32.lib user32.lib comdlg32.lib ^
-            /SUBSYSTEM:WINDOWS /MANIFEST:EMBED
-
-      - name: 打包
-        shell: cmd
-        run: powershell Compress-Archive -Path "DisableSogouNetwork_%VERSION%.exe" -DestinationPath "DisableSogouNetwork_%VERSION%.zip"
+          $exe = Get-ChildItem -Recurse -Name FRPManager.exe | Select-Object -First 1
+          if (-not $exe) { Write-Error "找不到 FRPManager.exe"; exit 1 }
+          Copy-Item $exe -Destination .
+          Compress-Archive -Path FRPManager.exe -DestinationPath FRPManager.zip
 
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            DisableSogouNetwork_${{ env.VERSION }}.exe
-            DisableSogouNetwork_${{ env.VERSION }}.zip
-          tag_name: ${{ env.VERSION }}
+            FRPManager.zip
+            FRPManager.exe
+          tag_name: ${{ github.ref_name }}
           body: |
-            搜狗输入法联网管理工具
+            ## FRP 管理器 ${{ github.ref_name }}
+
+            自动构建的 Release，已嵌入版本信息。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
